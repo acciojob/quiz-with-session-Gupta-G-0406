@@ -30,51 +30,48 @@ const questionsElement = document.getElementById("questions");
 const submitButton = document.getElementById("submit");
 const scoreElement = document.getElementById("score");
 
-// ---- SESSION STORAGE (Progress) ----
+// get saved progress
 let userAnswers = JSON.parse(sessionStorage.getItem("progress")) || {};
 
-// ---- RENDER QUESTIONS ----
 function renderQuestions() {
   questionsElement.innerHTML = "";
 
   questions.forEach((q, i) => {
-    const questionDiv = document.createElement("div");
-
-    const questionText = document.createElement("p");
-    questionText.textContent = q.question;
-    questionDiv.appendChild(questionText);
+    const div = document.createElement("div");
+    div.textContent = q.question;
 
     q.choices.forEach((choice) => {
-      const label = document.createElement("label");
-
       const input = document.createElement("input");
       input.type = "radio";
       input.name = `question-${i}`;
       input.value = choice;
 
-      // restore checked option from sessionStorage
+      // restore from sessionStorage
       if (userAnswers[i] === choice) {
         input.checked = true;
+        input.setAttribute("checked", "true"); // 🔑 IMPORTANT
       }
 
-      // save progress on change
-      input.addEventListener("change", () => {
+      input.addEventListener("click", () => {
         userAnswers[i] = choice;
         sessionStorage.setItem("progress", JSON.stringify(userAnswers));
+
+        // remove checked attribute from siblings
+        document
+          .querySelectorAll(`input[name="question-${i}"]`)
+          .forEach((el) => el.removeAttribute("checked"));
+
+        input.setAttribute("checked", "true"); // 🔑 IMPORTANT
       });
 
-      label.appendChild(input);
-      label.appendChild(document.createTextNode(choice));
-
-      questionDiv.appendChild(label);
-      questionDiv.appendChild(document.createElement("br"));
+      div.appendChild(input);
+      div.appendChild(document.createTextNode(choice));
     });
 
-    questionsElement.appendChild(questionDiv);
+    questionsElement.appendChild(div);
   });
 }
 
-// ---- SUBMIT QUIZ ----
 submitButton.addEventListener("click", () => {
   let score = 0;
 
@@ -85,16 +82,13 @@ submitButton.addEventListener("click", () => {
   });
 
   scoreElement.textContent = `Your score is ${score} out of ${questions.length}.`;
-
-  // store final score in localStorage
-  localStorage.setItem("score", score);
+  localStorage.setItem("score", String(score));
 });
 
-// ---- RESTORE SCORE AFTER REFRESH ----
+// restore score after refresh
 const savedScore = localStorage.getItem("score");
 if (savedScore !== null) {
   scoreElement.textContent = `Your score is ${savedScore} out of ${questions.length}.`;
 }
 
-// initial render
 renderQuestions();
